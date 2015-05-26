@@ -418,7 +418,7 @@ where R: Read {
 ///
 /// For optimal performance, `write` should be a buffered writer. `flush` will not be called on
 /// the writer.
-pub fn write_message<W, M>(write: &mut W, message: &mut M) -> io::Result<()>
+pub fn write_message<W, M>(write: &mut W, message: &M) -> io::Result<()>
 where W: Write, M: MessageBuilder {
     match try!(write_message_async(write, message, None)) {
         AsyncValue::Complete(()) => Ok(()),
@@ -439,22 +439,22 @@ where W: Write, M: MessageBuilder {
 /// use the continuation to resume writing the message again when `write` can
 /// take more bytes. The message *must not* be mutated in the mean time.
 pub fn write_message_async<W, M>(write: &mut W,
-                                 message: &mut M,
+                                 message: &M,
                                  continuation: Option<WriteContinuation>)
                                  -> io::Result<AsyncWrite>
 where W: Write, M: MessageBuilder {
     let segments = message.get_segments_for_output();
     match continuation {
         None => {
-            try_async!(write_segment_table(write, segments, 0, 0));
-            write_segments(write, segments, 0, 0)
+            try_async!(write_segment_table(write, &segments, 0, 0));
+            write_segments(write, &segments, 0, 0)
         },
         Some(WriteContinuation::SegmentTable { word, idx }) => {
-            try_async!(write_segment_table(write, segments, word, idx));
-            write_segments(write, segments, 0, 0)
+            try_async!(write_segment_table(write, &segments, word, idx));
+            write_segments(write, &segments, 0, 0)
         },
         Some(WriteContinuation::Segments { segment, idx }) => {
-            write_segments(write, segments, segment, idx)
+            write_segments(write, &segments, segment, idx)
         },
     }
 }
@@ -544,8 +544,7 @@ where W: Write {
     Ok(AsyncValue::Complete(()))
 }
 
-
-pub fn compute_serialized_size_in_words<U : MessageBuilder>(message: &mut U) -> usize {
+pub fn compute_serialized_size_in_words<U : MessageBuilder>(message: &U) -> usize {
     let segments = message.get_segments_for_output();
 
     // Table size
