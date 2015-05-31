@@ -109,6 +109,21 @@ pub trait MessageReader {
     }
 }
 
+impl<'a, M: ?Sized> MessageReader for &'a mut M where M: MessageReader {
+    fn get_segment(&self, id: usize) -> &[Word] {
+        (**self).get_segment(id)
+    }
+    fn arena(&self) -> &ReaderArena {
+        (**self).arena()
+    }
+    fn arena_mut(&mut self) -> &mut ReaderArena {
+        (**self).arena_mut()
+    }
+    fn get_options(&self) -> &ReaderOptions {
+        (**self).get_options()
+    }
+}
+
 pub struct SegmentArrayMessageReader<'a> {
     segments : &'a [ &'a [Word]],
     options : ReaderOptions,
@@ -226,6 +241,15 @@ pub trait MessageBuilder {
 
     fn get_cap_table<'a>(&'a self) -> &'a [Option<Box<ClientHook+Send>>] {
         self.arena().get_cap_table()
+    }
+}
+
+impl<'a, M: ?Sized> MessageBuilder for &'a mut M where M: MessageBuilder {
+    fn arena_mut(&mut self) -> &mut BuilderArena {
+        (**self).arena_mut()
+    }
+    fn arena(&self) -> &BuilderArena {
+        (**self).arena()
     }
 }
 
